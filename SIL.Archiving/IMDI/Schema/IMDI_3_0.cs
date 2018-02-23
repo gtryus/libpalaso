@@ -412,8 +412,18 @@ namespace SIL.Archiving.IMDI.Schema
 	public class KeyType
 	{
 		/// <remarks/>
+		public KeyType()
+		{
+			Type = VocabularyTypeValueType.OpenVocabulary;
+		}
+
+		/// <remarks/>
 		[XmlAttribute]
 		public string Name { get; set; }
+
+		/// <remarks/>
+		[XmlAttribute]
+		public VocabularyTypeValueType Type { get; set; }
 
 		/// <remarks/>
 		[XmlText]
@@ -1004,7 +1014,7 @@ namespace SIL.Archiving.IMDI.Schema
 		public DescriptionTypeCollection Description { get; set; }
 
 		/// <summary>Adds a language, setting some attributes also</summary>
-		public void AddLanguage(ArchivingLanguage language, BooleanEnum dominantLanguage, BooleanEnum sourceLanguage, BooleanEnum targetLanguage)
+		public void AddLanguage(ArchivingLanguage language, BooleanEnum dominantLanguage, BooleanEnum sourceLanguage, BooleanEnum targetLanguage, LanguageString description)
 		{
 			var imdiLanguage = LanguageList.Find(language).ToLanguageType();
 			if (imdiLanguage == null) return;
@@ -1012,6 +1022,7 @@ namespace SIL.Archiving.IMDI.Schema
 			imdiLanguage.Dominant = new BooleanType { Value = dominantLanguage };
 			imdiLanguage.SourceLanguage = new BooleanType { Value = sourceLanguage };
 			imdiLanguage.TargetLanguage = new BooleanType { Value = targetLanguage };
+			imdiLanguage.Description.Add(description);
 			Languages.Language.Add(imdiLanguage);
 		}
 
@@ -1025,14 +1036,14 @@ namespace SIL.Archiving.IMDI.Schema
 		/// <remarks/>
 		public void SetPlanningType(string planningType)
 		{
-			IMDIItemList list = ListConstructor.GetClosedList(ListType.ContentPlanningType);
+			IMDIItemList list = ListConstructor.GetClosedList(ListType.ContentPlanningType, false);
 			CommunicationContext.PlanningType = list.FindByValue(planningType).ToVocabularyType(VocabularyTypeValueType.ClosedVocabulary, ListType.Link(ListType.ContentPlanningType));
 		}
 
 		/// <remarks/>
 		public void SetInvolvement(string involvement)
 		{
-			IMDIItemList list = ListConstructor.GetClosedList(ListType.ContentInvolvement);
+			IMDIItemList list = ListConstructor.GetClosedList(ListType.ContentInvolvement, false);
 			CommunicationContext.Involvement = list.FindByValue(involvement).ToVocabularyType(VocabularyTypeValueType.ClosedVocabulary, ListType.Link(ListType.ContentInvolvement));
 		}
 
@@ -1229,6 +1240,12 @@ namespace SIL.Archiving.IMDI.Schema
 			Name = new[] {actor.GetName()};
 			FullName = actor.GetFullName();
 
+			if (!string.IsNullOrEmpty(actor.Code))
+				Code = actor.Code;
+
+			if (!string.IsNullOrEmpty(actor.EthnicGroup))
+				EthnicGroup = actor.EthnicGroup;
+
 			if (!string.IsNullOrEmpty(actor.Age))
 				Age = actor.Age;
 
@@ -1277,6 +1294,11 @@ namespace SIL.Archiving.IMDI.Schema
 			// Anonymize
 			if (actor.Anonymize)
 				Anonymized = new BooleanType { Value = BooleanEnum.@true };
+
+			// Description
+			if (actor.Description.Count != 0)
+				foreach (var description in actor.Description)
+					Description.Add(description);
 		}
 
 		/// <remarks/>
@@ -1788,6 +1810,24 @@ namespace SIL.Archiving.IMDI.Schema
 		}
 
 		/// <remarks/>
+		public void AddContentDescription(LanguageString description)
+		{
+			MDGroup.Content.Description.Add(description);
+		}
+
+		/// <remarks/>
+		public void AddLanguage(ArchivingLanguage language, LanguageString description)
+		{
+			MDGroup.Content.AddLanguage(language, BooleanEnum.Unspecified, BooleanEnum.Unspecified, BooleanEnum.Unspecified, description);
+		}
+
+		/// <remarks/>
+		public void AddProject(Project project)
+		{
+			MDGroup.Project.Add(project);
+		}
+
+		/// <remarks/>
 		public void AddActor(ArchivingActor actor)
 		{
 			if (actor.Anonymize)
@@ -1802,13 +1842,6 @@ namespace SIL.Archiving.IMDI.Schema
 			}
 
 			MDGroup.Actors.Actor.Add(new ActorType(actor));
-
-			// actor files, only if not anonymized
-			if (!actor.Anonymize)
-			{
-				foreach (var file in actor.Files)
-					AddFile(new IMDIFile(file), "Contributors");
-			}
 		}
 
 		/// <remarks>Not used yet</remarks>
@@ -1822,24 +1855,32 @@ namespace SIL.Archiving.IMDI.Schema
 		/// <remarks/>
 		public void AddKeyValuePair(string key, string value)
 		{
-			MDGroup.Keys.Key.Add(new KeyType { Name = key, Value = value });
+			MDGroup.Content.Keys.Key.Add(new KeyType { Name = key, Value = value });
 		}
 
 		/// <remarks/>
-		public void AddFile(ArchivingFile file)
+		public IIMDISessionFile AddFile(ArchivingFile file)
 		{
-			AddFile(new IMDIFile(file), IMDIArchivingDlgViewModel.NormalizeDirectoryName(Name));
+			return AddFile(new IMDIFile(file), IMDIArchivingDlgViewModel.NormalizeDirectoryName(Name));
 		}
 
 		/// <summary></summary>
 		/// <param name="imdiFile"></param>
 		/// <param name="directoryName">The sub-directory name in the imdi package directory</param>
-		private void AddFile(IMDIFile imdiFile, string directoryName)
+		private IIMDISessionFile AddFile(IMDIFile imdiFile, string directoryName)
 		{
+			IIMDISessionFile file;
 			if (imdiFile.IsMediaFile)
-				Resources.MediaFile.Add(imdiFile.ToMediaFileType(directoryName));
+			{
+				file = imdiFile.ToMediaFileType(directoryName);
+				Resources.MediaFile.Add(file as MediaFileType);
+			}
 			else
-				Resources.WrittenResource.Add(imdiFile.ToWrittenResourceType(directoryName));
+			{
+				file = imdiFile.ToWrittenResourceType(directoryName);
+				Resources.WrittenResource.Add(file as WrittenResourceType);
+			}
+			return file;
 		}
 
 		/// <remarks/>
@@ -1866,7 +1907,7 @@ namespace SIL.Archiving.IMDI.Schema
 			}
 			set
 			{
-				MDGroup.Content.Genre = value.ToVocabularyType(false, ListType.Link(ListType.ContentGenre));
+				MDGroup.Content.Genre = value.Replace("<","").Replace(">","").ToVocabularyType(false, ListType.Link(ListType.ContentGenre));
 			}
 		}
 
@@ -1950,7 +1991,7 @@ namespace SIL.Archiving.IMDI.Schema
 			}
 			set
 			{
-				MDGroup.Content.SubGenre = value.ToVocabularyType(false, ListType.Link(ListType.ContentSubGenre));
+				MDGroup.Content.Task = value.ToVocabularyType(false, ListType.Link(ListType.ContentSubGenre));
 			}
 		}
 	}

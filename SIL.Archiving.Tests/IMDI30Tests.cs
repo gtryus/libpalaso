@@ -148,7 +148,7 @@ namespace SIL.Archiving.Tests
 		}
 
 		[Test]
-		public void AddDescription_Add2ForSameLanguage_AddsOnlyTheFirst()
+		public void AddDescription_Add2ForSameLanguage_AddsTheSecond()
 		{
 			var desc1 = new LanguageString { Iso3LanguageId = "eng", Value = "First description"};
 			var desc2 = new LanguageString { Iso3LanguageId = "eng", Value = "Second description" };
@@ -158,7 +158,7 @@ namespace SIL.Archiving.Tests
 			obj.Description.Add(desc2);
 
 			Assert.AreEqual(1, obj.Description.Count);
-			Assert.AreEqual("First description", obj.Description.First().Value);
+			Assert.AreEqual("Second description", obj.Description.First().Value);
 		}
 
 		[Test]

@@ -40,7 +40,7 @@ namespace SIL.Archiving.IMDI.Lists
 			var langName = Text;
 
 			// check for "und" code
-			if ((Id.EndsWith("und")) && (!string.IsNullOrEmpty(OtherName)))
+			if (!Id.EndsWith("und") && !string.IsNullOrEmpty(OtherName))
 				langName = OtherName;
 
 			return new LanguageType

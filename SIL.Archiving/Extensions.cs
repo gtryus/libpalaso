@@ -113,12 +113,17 @@ namespace SIL.Archiving
 		{
 			var returnVal = "";
 
+			int lastDot = s.LastIndexOf(".", StringComparison.InvariantCulture);
+
+			var i = 0;
 			foreach (var c in s)
 			{
 				var test = c.ToString(CultureInfo.InvariantCulture);
 
 				if ((test == charReplacement) || (test == spaceReplacement))  // do not replace the replacement characters
 					returnVal += test;
+				else if (c == '.' && i != lastDot) // only allow one dot in the file name
+					returnVal += spaceReplacement;
 				else if (charsToIgnore.Contains(test))  // do not replace ignored characters
 					returnVal += test;
 				else if (char.IsWhiteSpace(c))
@@ -135,6 +140,7 @@ namespace SIL.Archiving
 					returnVal += charReplacement;
 				else  // legal characters
 					returnVal += test;
+				i += 1;
 			}
 
 			// remove consecutive replacement characters

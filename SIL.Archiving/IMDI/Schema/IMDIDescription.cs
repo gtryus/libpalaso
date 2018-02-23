@@ -59,9 +59,7 @@ namespace SIL.Archiving.IMDI.Schema
 
 		public int GetHashCode(DescriptionType obj)
 		{
-			return obj.LanguageId == null
-				? string.Empty.GetHashCode()
-				: obj.LanguageId.GetHashCode();
+			return ((obj.Name ?? string.Empty) + (obj.LanguageId ?? string.Empty)).GetHashCode();
 		}
 	}
 
@@ -78,7 +76,9 @@ namespace SIL.Archiving.IMDI.Schema
 		/// <summary>Adds a description (in a particular language)</summary>
 		public void Add(LanguageString description)
 		{
-			Add(description.ToIMDIDescriptionType());
+			var newItem = description.ToIMDIDescriptionType();
+			if (Contains(newItem)) Remove(newItem);
+			Add(newItem);
 		}
 	}
 

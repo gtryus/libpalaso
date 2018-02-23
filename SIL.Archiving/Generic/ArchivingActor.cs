@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using SIL.Archiving.IMDI.Schema;
 using SIL.Extensions;
 
 namespace SIL.Archiving.Generic
@@ -17,6 +18,15 @@ namespace SIL.Archiving.Generic
 
 		/// <summary>If needed but not given, Name will be used</summary>
 		public string FullName;
+
+		/// <summary>Used to make data collection more anonomous</summary>
+		public string Code;
+
+		/// <summary>Available for IMDI export</summary>
+		public string FamilySocialRole;
+
+		/// <summary>Available for IMDI export</summary>
+		public string EthnicGroup;
 
 		/// <summary />
 		public string Age;
@@ -61,6 +71,7 @@ namespace SIL.Archiving.Generic
 			Iso3Languages = new ArchivingLanguageCollection();
 			Files = new List<ArchivingFile>();
 			Keys = new List<KeyValuePair<string, string>>();
+			Description = new DescriptionTypeCollection();
 		}
 
 		/// <summary>Value can be either DateTime (birth date), int (birth year), or string</summary>
@@ -104,6 +115,9 @@ namespace SIL.Archiving.Generic
 
 		/// <summary />
 		public string Role;
+
+		/// <summary></summary>
+		public DescriptionTypeCollection Description;
 
 		/// <summary />
 		public void AddKeyValuePair(string key, string value)
